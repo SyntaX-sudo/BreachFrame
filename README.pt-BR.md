@@ -84,9 +84,8 @@ Relatos de sucesso ou falha em outras plataformas são muito bem-vindos. Abra um
 
 ## Download
 
-**Nenhuma versão foi publicada ainda.** Quando um mantenedor publicar, os
-instaladores e o arquivo `SHA256SUMS.txt` estarão na
-[página de Releases](https://github.com/SyntaX-sudo/BreachFrame/releases):
+Os instaladores da versão mais recente, junto com o `SHA256SUMS.txt`, estão na
+[página de Releases](https://github.com/SyntaX-sudo/BreachFrame/releases/latest):
 
 | SO | Arquivo |
 |----|---------|
@@ -94,9 +93,9 @@ instaladores e o arquivo `SHA256SUMS.txt` estarão na
 | Linux | `.AppImage`, `.deb`, `.rpm` |
 | macOS | `BreachFrame_<versão>_aarch64.dmg` (Apple Silicon), `_x64.dmg` (Intel) |
 
-Até lá, compile a partir do código-fonte ([docs/building.md](docs/building.md)) ou
-baixe os instaladores anexados a uma execução bem-sucedida do CI
-(*Actions → CI → Artifacts*).
+Também há pacotes para Linux ARM64 (`aarch64.AppImage`, `_arm64.deb`,
+`aarch64.rpm`). Se preferir, compile a partir do código-fonte
+([docs/building.md](docs/building.md)).
 
 ## Instalação
 
