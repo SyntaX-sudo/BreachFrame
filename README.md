@@ -74,10 +74,10 @@ Only what has actually been verified is marked as such.
 |----------|--------|
 | Windows 10 x64 | ✅ Built, unit- and E2E-tested on Windows 10 Pro 22H2 (19045). NSIS and MSI installers built locally; silent per-user NSIS install, first launch and uninstall verified (the MSI was built but not install-tested). |
 | Windows 11 x64 | ⚠️ Expected to work (same WebView2 runtime); not tested yet. |
-| Linux x86_64: Ubuntu 22.04+ / Debian 12+ / Linux Mint 21+ | ⚠️ CI builds AppImage, .deb and .rpm on Ubuntu 22.04. The app has not been run on these distros by the maintainers yet. |
+| Linux x86_64: Ubuntu 22.04+ / Debian 12+ / Linux Mint 21+ | ⚠️ CI (Ubuntu 22.04) passes all Rust tests and builds AppImage, .deb and .rpm. The app has not been launched on these distros yet. |
 | Linux x86_64: Fedora / Arch | ⚠️ Build dependencies documented; not validated. |
-| Linux ARM64 | ⚠️ CI build configured (GitHub ARM runner); not validated. |
-| macOS 10.15+ Apple Silicon / Intel | ⚠️ CI builds DMGs; not run by the maintainers yet. **Builds are unsigned and not notarized** unless Apple credentials are configured (see [docs/releasing.md](docs/releasing.md)). |
+| Linux ARM64 | ⚠️ CI builds AppImage, .deb and .rpm on a GitHub ARM runner; not launched yet. |
+| macOS 10.15+ Apple Silicon / Intel | ⚠️ CI (macOS, Apple Silicon) passes all Rust tests and builds DMGs for both architectures; the app has not been launched yet. **Builds are unsigned and not notarized** unless Apple credentials are configured (see [docs/releasing.md](docs/releasing.md)). |
 
 Reports of success or failure on other platforms are very welcome. Please open
 an issue.

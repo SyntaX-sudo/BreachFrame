@@ -75,10 +75,10 @@ Só está marcado como verificado o que de fato foi verificado.
 |------------|----------|
 | Windows 10 x64 | ✅ Compilado e testado (unitários e E2E) no Windows 10 Pro 22H2 (19045). Instaladores NSIS e MSI gerados localmente; instalação silenciosa por usuário via NSIS, primeira execução e desinstalação verificadas (o MSI foi gerado, mas não testado na instalação). |
 | Windows 11 x64 | ⚠️ Deve funcionar (mesmo runtime WebView2); ainda não testado. |
-| Linux x86_64: Ubuntu 22.04+ / Debian 12+ / Linux Mint 21+ | ⚠️ O CI gera AppImage, .deb e .rpm no Ubuntu 22.04. Os mantenedores ainda não executaram o app nessas distribuições. |
+| Linux x86_64: Ubuntu 22.04+ / Debian 12+ / Linux Mint 21+ | ⚠️ O CI (Ubuntu 22.04) passa em todos os testes Rust e gera AppImage, .deb e .rpm. O app ainda não foi aberto nessas distribuições. |
 | Linux x86_64: Fedora / Arch | ⚠️ Dependências de build documentadas; não validado. |
-| Linux ARM64 | ⚠️ Build configurado no CI (runner ARM do GitHub); não validado. |
-| macOS 10.15+ Apple Silicon / Intel | ⚠️ O CI gera DMGs; ainda não executado pelos mantenedores. **Os builds não são assinados nem notarizados** sem credenciais Apple configuradas (veja [docs/releasing.md](docs/releasing.md)). |
+| Linux ARM64 | ⚠️ O CI gera AppImage, .deb e .rpm em um runner ARM do GitHub; o app ainda não foi aberto. |
+| macOS 10.15+ Apple Silicon / Intel | ⚠️ O CI (macOS, Apple Silicon) passa em todos os testes Rust e gera DMGs para as duas arquiteturas; o app ainda não foi aberto. **Os builds não são assinados nem notarizados** sem credenciais Apple configuradas (veja [docs/releasing.md](docs/releasing.md)). |
 
 Relatos de sucesso ou falha em outras plataformas são muito bem-vindos. Abra uma issue.
 
