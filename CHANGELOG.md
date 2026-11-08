@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-08
+
 ### Added
 - Analysis engine: environment graphs with deny-path policies, Kubernetes RBAC
   (RBAC-001…023), AWS IAM (IAM-001…006), MCP configurations (MCP-001…010),
@@ -19,3 +21,6 @@ All notable changes to this project are documented here. The format follows
 - CI workflow (lint, typecheck, unit tests, Rust tests on three OSes, Windows
   E2E, installer bundles) and a manually approved, draft-only release workflow
   with SHA-256 checksums.
+
+[Unreleased]: https://github.com/SyntaX-sudo/BreachFrame/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/SyntaX-sudo/BreachFrame/releases/tag/v0.1.0
