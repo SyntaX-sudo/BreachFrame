@@ -1,0 +1,16 @@
+[package]
+name = "breachframe-cli"
+description = "Command-line interface for the BreachFrame security analysis engine."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "breachframe"
+path = "src/main.rs"
+
+[dependencies]
+breachframe-engine = { path = "../engine" }
+serde_json.workspace = true

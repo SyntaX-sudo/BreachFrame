@@ -1,0 +1,130 @@
+id: iam-passrole-escalation
+title: iam:PassRole privilege escalation
+category: AWS IAM
+difficulty: intermediate
+summary: >-
+  Developers may create Lambda functions and pass *any* role to them. An
+  administrator role trusted by Lambda exists, so a developer can deploy a
+  function that runs as administrator.
+objectives:
+  - Understand why `iam:PassRole` on `Resource "*"` is an escalation primitive.
+  - Trace user → group → passable role → all resources.
+  - Constrain PassRole with explicit ARNs and the `iam:PassedToService` condition.
+attacker: arn:aws:iam::111122223333:user/dev-alice
+walkthrough:
+  - "`dev-alice` is a member of `developers`, whose inline policy allows `iam:PassRole` on `*` plus `lambda:CreateFunction`."
+  - "`lambda-admin` trusts `lambda.amazonaws.com` and has `AdministratorAccess`."
+  - Alice creates a function with `--role lambda-admin`, invokes it, and the code runs with full account access.
+  - Policy P-IAM-01 (human users must not reach account-wide admin) is violated.
+vulnerable:
+  - name: authorization-details.json
+    content: |
+      {
+        "UserDetailList": [
+          { "UserName": "dev-alice", "Arn": "arn:aws:iam::111122223333:user/dev-alice", "GroupList": ["developers"] }
+        ],
+        "GroupDetailList": [
+          {
+            "GroupName": "developers",
+            "Arn": "arn:aws:iam::111122223333:group/developers",
+            "GroupPolicyList": [
+              {
+                "PolicyName": "lambda-dev",
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    { "Sid": "Lambda", "Effect": "Allow", "Action": ["lambda:CreateFunction", "lambda:InvokeFunction", "lambda:GetFunction"], "Resource": "*" },
+                    { "Sid": "PassAnyRole", "Effect": "Allow", "Action": "iam:PassRole", "Resource": "*" }
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "RoleDetailList": [
+          {
+            "RoleName": "lambda-admin",
+            "Arn": "arn:aws:iam::111122223333:role/lambda-admin",
+            "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [{ "Effect": "Allow", "Principal": { "Service": "lambda.amazonaws.com" }, "Action": "sts:AssumeRole" }]
+            },
+            "AttachedManagedPolicies": [{ "PolicyName": "AdministratorAccess", "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess" }]
+          }
+        ],
+        "Policies": []
+      }
+  - name: environment.yaml
+    content: |
+      breachframe: 1
+      name: AWS account guardrails
+      policies:
+        - id: P-IAM-01
+          name: Human users must not reach account-wide access
+          severity: critical
+          deny:
+            from: { kind: user }
+            to: { attributes: { sensitivity: critical } }
+fixed:
+  - name: authorization-details.json
+    content: |
+      {
+        "UserDetailList": [
+          { "UserName": "dev-alice", "Arn": "arn:aws:iam::111122223333:user/dev-alice", "GroupList": ["developers"] }
+        ],
+        "GroupDetailList": [
+          {
+            "GroupName": "developers",
+            "Arn": "arn:aws:iam::111122223333:group/developers",
+            "GroupPolicyList": [
+              {
+                "PolicyName": "lambda-dev",
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    { "Sid": "Lambda", "Effect": "Allow", "Action": ["lambda:CreateFunction", "lambda:InvokeFunction", "lambda:GetFunction"], "Resource": "arn:aws:lambda:us-east-1:111122223333:function:dev-*" },
+                    {
+                      "Sid": "PassBasicRoleOnly",
+                      "Effect": "Allow",
+                      "Action": "iam:PassRole",
+                      "Resource": "arn:aws:iam::111122223333:role/lambda-basic-exec",
+                      "Condition": { "StringEquals": { "iam:PassedToService": "lambda.amazonaws.com" } }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "RoleDetailList": [
+          {
+            "RoleName": "lambda-basic-exec",
+            "Arn": "arn:aws:iam::111122223333:role/lambda-basic-exec",
+            "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [{ "Effect": "Allow", "Principal": { "Service": "lambda.amazonaws.com" }, "Action": "sts:AssumeRole" }]
+            },
+            "RolePolicyList": [
+              {
+                "PolicyName": "logs",
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [{ "Effect": "Allow", "Action": ["logs:CreateLogStream", "logs:PutLogEvents"], "Resource": "arn:aws:logs:us-east-1:111122223333:log-group:/aws/lambda/dev-*" }]
+                }
+              }
+            ]
+          }
+        ],
+        "Policies": []
+      }
+  - name: environment.yaml
+    content: |
+      breachframe: 1
+      name: AWS account guardrails
+      policies:
+        - id: P-IAM-01
+          name: Human users must not reach account-wide access
+          severity: critical
+          deny:
+            from: { kind: user }
+            to: { attributes: { sensitivity: critical } }

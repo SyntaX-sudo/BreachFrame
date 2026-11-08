@@ -1,0 +1,29 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DeployLambdas",
+      "Effect": "Allow",
+      "Action": ["lambda:CreateFunction", "lambda:UpdateFunctionCode", "iam:PassRole"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadAllSecrets",
+      "Effect": "Allow",
+      "Action": "secretsmanager:GetSecretValue",
+      "Resource": "*"
+    },
+    {
+      "Sid": "S3Everything",
+      "Effect": "Allow",
+      "Action": "s3:*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "ScopedLogs",
+      "Effect": "Allow",
+      "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+      "Resource": "arn:aws:logs:us-east-1:111122223333:log-group:/app/*"
+    }
+  ]
+}

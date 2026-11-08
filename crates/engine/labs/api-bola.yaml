@@ -1,0 +1,88 @@
+id: api-bola
+title: Broken object-level authorization in a multi-tenant API
+category: API authorization
+difficulty: beginner
+summary: >-
+  The orders API trusts the `orderId` in the URL and the backend queries the
+  shared orders table without a tenant filter, so a customer of tenant A can
+  read tenant B's orders and payment tokens. An unauthenticated admin endpoint
+  makes it worse.
+objectives:
+  - Model object-level authorization (BOLA / IDOR) as reachability across tenant boundaries.
+  - See why "authenticated" is not the same as "authorized for this object".
+  - Fix the path with tenant-scoped data access and by removing the public admin route.
+attacker: user:tenant-a-customer
+walkthrough:
+  - A tenant-A customer calls `GET /orders/{id}` with an id that belongs to tenant B.
+  - "The gateway authenticates the caller but does not check ownership (`authz: authenticated-only`)."
+  - The orders service runs `SELECT * FROM orders WHERE id = ?` against the shared table.
+  - Tenant B's orders and stored payment tokens are returned — policy P-TENANT-01 is violated.
+  - Separately, `/admin/export` is reachable from the internet without authentication.
+vulnerable:
+  - name: orders-api.yaml
+    content: |
+      breachframe: 1
+      name: Orders platform
+      nodes:
+        - { id: "user:internet", kind: external, label: "Internet", attributes: { public: true } }
+        - { id: "user:tenant-a-customer", kind: user, label: "Customer (tenant A)", attributes: { tenant: a } }
+        - { id: "api:get-order", kind: api, label: "GET /orders/{id}", attributes: { authz: authenticated-only } }
+        - { id: "api:admin-export", kind: api, label: "GET /admin/export", attributes: { authz: none } }
+        - { id: "svc:orders", kind: service, label: "orders-service" }
+        - { id: "db:orders-shared", kind: resource, label: "orders table (all tenants)", attributes: { tenant: shared } }
+        - { id: "data:tenant-b-orders", kind: resource, label: "Tenant B orders", attributes: { tenant: b, sensitivity: high } }
+        - { id: "secret:payment-tokens", kind: secret, label: "Stored payment tokens", attributes: { tenant: b } }
+      edges:
+        - { from: "user:tenant-a-customer", to: "api:get-order", relation: calls }
+        - { from: "user:internet", to: "api:admin-export", relation: calls }
+        - { from: "api:get-order", to: "svc:orders", relation: forwards, attributes: { ownership_check: false } }
+        - { from: "api:admin-export", to: "svc:orders", relation: forwards }
+        - { from: "svc:orders", to: "db:orders-shared", relation: queries, permissions: ["SELECT"] }
+        - { from: "db:orders-shared", to: "data:tenant-b-orders", relation: contains }
+        - { from: "db:orders-shared", to: "secret:payment-tokens", relation: contains }
+      policies:
+        - id: P-TENANT-01
+          name: Tenants must never reach another tenant's data
+          severity: critical
+          recommendation: Derive the tenant from the authenticated session and enforce it in the data layer (row-level security or a mandatory tenant filter), not from request parameters.
+          deny:
+            from: { attributes: { tenant: a } }
+            to: { attributes: { tenant: b } }
+        - id: P-PUBLIC-01
+          name: Anonymous internet traffic must not reach stored secrets
+          severity: critical
+          deny:
+            from: { attributes: { public: true } }
+            to: { kind: secret }
+fixed:
+  - name: orders-api.yaml
+    content: |
+      breachframe: 1
+      name: Orders platform (hardened)
+      nodes:
+        - { id: "user:internet", kind: external, label: "Internet", attributes: { public: true } }
+        - { id: "user:tenant-a-customer", kind: user, label: "Customer (tenant A)", attributes: { tenant: a } }
+        - { id: "api:get-order", kind: api, label: "GET /orders/{id}", attributes: { authz: owner-check } }
+        - { id: "svc:orders", kind: service, label: "orders-service" }
+        - { id: "db:orders-tenant-a", kind: resource, label: "orders (RLS: tenant A)", attributes: { tenant: a } }
+        - { id: "db:orders-shared", kind: resource, label: "orders table (all tenants)", attributes: { tenant: shared } }
+        - { id: "data:tenant-b-orders", kind: resource, label: "Tenant B orders", attributes: { tenant: b, sensitivity: high } }
+        - { id: "secret:payment-tokens", kind: secret, label: "Stored payment tokens (vault)", attributes: { tenant: b } }
+      edges:
+        - { from: "user:tenant-a-customer", to: "api:get-order", relation: calls }
+        - { from: "api:get-order", to: "svc:orders", relation: forwards, attributes: { ownership_check: true } }
+        - { from: "svc:orders", to: "db:orders-tenant-a", relation: queries_with_rls, permissions: ["SELECT"] }
+        - { from: "db:orders-shared", to: "data:tenant-b-orders", relation: contains }
+      policies:
+        - id: P-TENANT-01
+          name: Tenants must never reach another tenant's data
+          severity: critical
+          deny:
+            from: { attributes: { tenant: a } }
+            to: { attributes: { tenant: b } }
+        - id: P-PUBLIC-01
+          name: Anonymous internet traffic must not reach stored secrets
+          severity: critical
+          deny:
+            from: { attributes: { public: true } }
+            to: { kind: secret }

@@ -1,0 +1,42 @@
+# BreachFrame environment file (format v1). See docs/environment-format.md.
+# A small SaaS where an AI support agent uses MCP servers. Two policies are
+# deliberately violated so the example produces findings.
+breachframe: 1
+name: Support agent platform (example)
+description: Customer-facing AI agent with MCP tools, an internal API and a billing database.
+nodes:
+  - { id: "user:customer", kind: user, label: "Anonymous customer", attributes: { public: true } }
+  - { id: "user:support-lead", kind: user, label: "Support lead" }
+  - { id: "agent:support-bot", kind: agent, label: "Support bot", attributes: { exposure: public } }
+  - { id: "mcp:tickets", kind: mcp_server, label: "tickets MCP server" }
+  - { id: "mcp:ops", kind: mcp_server, label: "ops MCP server" }
+  - { id: "tool:search-tickets", kind: tool, label: "search_tickets" }
+  - { id: "tool:run-sql", kind: tool, label: "run_sql", attributes: { capability: database-write } }
+  - { id: "api:internal-admin", kind: api, label: "Internal admin API" }
+  - { id: "db:billing", kind: resource, label: "Billing database", attributes: { sensitivity: critical } }
+  - { id: "secret:stripe-key", kind: secret, label: "Payment provider API key" }
+edges:
+  - { from: "user:customer", to: "agent:support-bot", relation: chats_with }
+  - { from: "user:support-lead", to: "agent:support-bot", relation: administers }
+  - { from: "agent:support-bot", to: "mcp:tickets", relation: uses }
+  - { from: "agent:support-bot", to: "mcp:ops", relation: uses }
+  - { from: "mcp:tickets", to: "tool:search-tickets", relation: exposes }
+  - { from: "mcp:ops", to: "tool:run-sql", relation: exposes }
+  - { from: "tool:run-sql", to: "db:billing", relation: writes, permissions: ["SELECT", "UPDATE"] }
+  - { from: "mcp:ops", to: "api:internal-admin", relation: calls }
+  - { from: "api:internal-admin", to: "secret:stripe-key", relation: reads }
+policies:
+  - id: P-AGENT-01
+    name: Public-facing agents must not reach the billing database
+    severity: critical
+    recommendation: Remove the ops MCP server from the public agent, or put a human approval step in front of run_sql.
+    deny:
+      from: { attributes: { exposure: public } }
+      to: { ids: ["db:billing"] }
+  - id: P-AGENT-02
+    name: Anonymous users must not reach secrets
+    severity: high
+    deny:
+      from: { attributes: { public: true } }
+      to: { kind: secret }
+      maxDepth: 8

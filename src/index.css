@@ -1,0 +1,244 @@
+@import 'tailwindcss';
+@import '@xyflow/react/dist/style.css';
+
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Consolas, monospace;
+
+  --color-bg: #080b11;
+  --color-panel: #0e131c;
+  --color-panel-2: #131a26;
+  --color-panel-3: #1a2231;
+  --color-line: #1f2838;
+  --color-line-strong: #2c3850;
+  --color-text: #d9e0ec;
+  --color-muted: #8691a6;
+  --color-faint: #5a6579;
+  --color-accent: #3df5c8;
+  --color-accent-dim: #1d8f76;
+  --color-ok: #2fd17a;
+
+  --color-sev-critical: #ff3b5c;
+  --color-sev-high: #ff8a3d;
+  --color-sev-medium: #f5c542;
+  --color-sev-low: #4fb3ff;
+  --color-sev-info: #8b95a7;
+
+  --animate-fade-in: fade-in 160ms ease-out;
+  --animate-slide-up: slide-up 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-pulse-ring: pulse-ring 1.6s ease-out infinite;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgb(255 59 92 / 0.55); }
+    100% { box-shadow: 0 0 0 10px rgb(255 59 92 / 0); }
+  }
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+    overflow: hidden;
+  }
+  ::selection {
+    background: rgb(61 245 200 / 0.25);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  code,
+  kbd,
+  .mono {
+    font-family: var(--font-mono);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .panel {
+    background: var(--color-panel);
+    border: 1px solid var(--color-line);
+    border-radius: 10px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight: 500;
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-panel-2);
+    color: var(--color-text);
+    transition: background 120ms, border-color 120ms, color 120ms;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .btn:hover:not(:disabled) {
+    background: var(--color-panel-3);
+    border-color: #3a4866;
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--color-accent);
+    color: #04221b;
+    border-color: transparent;
+    font-weight: 600;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: #6cf8d6;
+    border-color: transparent;
+  }
+  .btn-danger:hover:not(:disabled) {
+    border-color: var(--color-sev-critical);
+    color: var(--color-sev-critical);
+  }
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--color-panel-2);
+    border-color: transparent;
+  }
+  .input {
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 7px;
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: 12.5px;
+    outline: none;
+    transition: border-color 120ms;
+  }
+  .input:focus {
+    border-color: var(--color-accent-dim);
+  }
+  textarea.input {
+    height: auto;
+    padding: 8px 10px;
+  }
+  .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+  .kbd {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-panel-2);
+    color: var(--color-muted);
+  }
+  .grid-bg {
+    background-image:
+      linear-gradient(var(--color-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: -1px -1px;
+  }
+  .skeleton {
+    background: linear-gradient(90deg, var(--color-panel-2) 0%, var(--color-panel-3) 50%, var(--color-panel-2) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s linear infinite;
+    border-radius: 6px;
+  }
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* React Flow theme */
+.react-flow {
+  --xy-background-color: transparent;
+  --xy-edge-stroke: #3a4866;
+  --xy-edge-stroke-selected: var(--color-accent);
+  --xy-controls-button-background-color: var(--color-panel-2);
+  --xy-controls-button-background-color-hover: var(--color-panel-3);
+  --xy-controls-button-color: var(--color-text);
+  --xy-controls-button-border-color: var(--color-line);
+  --xy-minimap-background-color: var(--color-panel);
+  --xy-minimap-mask-background-color: rgb(8 11 17 / 0.7);
+  --xy-attribution-background-color: transparent;
+}
+.react-flow__edge-text {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+}
+.react-flow__edge-textbg {
+  fill: var(--color-bg);
+}
+.react-flow__controls {
+  box-shadow: none;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.react-flow__minimap {
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.edge-hot path.react-flow__edge-path {
+  stroke: var(--color-sev-critical) !important;
+  stroke-width: 2.2px;
+  filter: drop-shadow(0 0 4px rgb(255 59 92 / 0.6));
+}
+.edge-sim path.react-flow__edge-path {
+  stroke: var(--color-sev-high) !important;
+  stroke-width: 2px;
+}
+.edge-dim {
+  opacity: 0.18;
+}
+.edge-added path.react-flow__edge-path {
+  stroke: var(--color-ok) !important;
+  stroke-width: 2px;
+}
+.edge-removed path.react-flow__edge-path {
+  stroke: var(--color-sev-critical) !important;
+  stroke-dasharray: 5 4;
+}

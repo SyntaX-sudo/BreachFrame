@@ -1,0 +1,30 @@
+# Build output
+/target/
+/dist/
+/src-tauri/gen/
+node_modules/
+
+# Test output
+/playwright-report/
+/test-results/
+/coverage/
+*.tsbuildinfo
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Local data — never commit analysed configs or databases
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.*
+
+# Unrelated local tooling state (contains a session token)
+/.animation-mcp/
+/animations/
+/poses/

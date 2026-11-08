@@ -1,0 +1,129 @@
+name: Release
+
+# Releases are never created automatically from branch pushes.
+# They run only when the repository owner pushes a version tag (vX.Y.Z) that
+# matches the version in src-tauri/tauri.conf.json, and every build job uses the
+# protected `release` environment: configure required reviewers for it in
+# Settings → Environments so that a maintainer must approve each release.
+# The result is a DRAFT GitHub release with SHA256SUMS.txt; a maintainer
+# reviews and publishes it manually. See docs/releasing.md.
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  verify:
+    name: Verify tag and run tests
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        name: Tag must match the app version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          conf=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          pkg=$(node -p "require('./package.json').version")
+          echo "tag=$tag tauri.conf.json=$conf package.json=$pkg"
+          if [ "$tag" != "$conf" ] || [ "$tag" != "$pkg" ]; then
+            echo "::error::Tag v$tag does not match tauri.conf.json ($conf) / package.json ($pkg)"; exit 1
+          fi
+          echo "version=$tag" >> "$GITHUB_OUTPUT"
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint && npm run typecheck && npm test
+      - run: npx vite build
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+
+  build:
+    name: Build ${{ matrix.name }}
+    needs: verify
+    environment: release
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: windows-x64, os: windows-latest, target: x86_64-pc-windows-msvc }
+          - { name: linux-x64, os: ubuntu-22.04, target: x86_64-unknown-linux-gnu }
+          - { name: linux-arm64, os: ubuntu-22.04-arm, target: aarch64-unknown-linux-gnu }
+          - { name: macos-arm64, os: macos-latest, target: aarch64-apple-darwin }
+          - { name: macos-x64, os: macos-latest, target: x86_64-apple-darwin }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Optional macOS signing + notarization. When these secrets are not
+          # configured the app is built unsigned (see docs/releasing.md).
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: BreachFrame ${{ github.ref_name }}
+          releaseBody: |
+            Draft created by the release workflow. Review the assets and verify them against SHA256SUMS.txt before publishing.
+            Unsigned builds trigger SmartScreen (Windows) and Gatekeeper (macOS) warnings; see the README installation section.
+          releaseDraft: true
+          prerelease: false
+          args: --target ${{ matrix.target }}
+
+  checksums:
+    name: SHA-256 checksums
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - name: Download draft assets and upload SHA256SUMS.txt
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          mkdir assets && cd assets
+          gh release download "$TAG" --repo "$REPO" --pattern '*'
+          rm -f SHA256SUMS.txt
+          sha256sum -- * | tee SHA256SUMS.txt
+          gh release upload "$TAG" SHA256SUMS.txt --repo "$REPO" --clobber

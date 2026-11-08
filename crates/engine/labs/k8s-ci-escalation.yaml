@@ -1,0 +1,123 @@
+id: k8s-ci-escalation
+title: CI service account to cluster-admin
+category: Kubernetes RBAC
+difficulty: intermediate
+summary: >-
+  A CI pipeline deploys into `prod` with a role that can create pods and read
+  secrets. Another service account in `prod` is bound to cluster-admin, so the
+  pipeline can start a pod that mounts that account's token and take over the
+  cluster.
+objectives:
+  - Understand why `create pods` is equivalent to "become any service account in the namespace".
+  - Identify cluster-admin bindings for workload identities.
+  - Replace broad roles with patch-only deployment permissions.
+attacker: agent:pr-pipeline
+walkthrough:
+  - A malicious pull request runs in the CI pipeline, which holds the `build/ci-deployer` token.
+  - "`ci-deployer` may create pods in `prod` (RBAC-005), so it launches a pod with `serviceAccountName: payments-admin`."
+  - "`payments-admin` is bound to cluster-admin through a ClusterRoleBinding (RBAC-020)."
+  - The pod reads the mounted token and now controls every resource in the cluster.
+vulnerable:
+  - name: rbac.yaml
+    content: |
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata: { name: deployer, namespace: prod }
+      rules:
+        - apiGroups: [""]
+          resources: ["pods"]
+          verbs: ["create", "get", "list", "delete"]
+        - apiGroups: [""]
+          resources: ["secrets"]
+          verbs: ["get", "list"]
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata: { name: ci-deployer, namespace: prod }
+      roleRef: { apiGroup: rbac.authorization.k8s.io, kind: Role, name: deployer }
+      subjects:
+        - { kind: ServiceAccount, name: ci-deployer, namespace: build }
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata: { name: payments-admin }
+      roleRef: { apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: cluster-admin }
+      subjects:
+        - { kind: ServiceAccount, name: payments-admin, namespace: prod }
+  - name: environment.yaml
+    content: |
+      breachframe: 1
+      name: CI pipeline
+      nodes:
+        - { id: "agent:pr-pipeline", kind: agent, label: "Pull-request pipeline", attributes: { untrusted_input: true } }
+        - { id: "k8s:sa:build/ci-deployer", kind: service_account, label: "sa build/ci-deployer" }
+      edges:
+        - { from: "agent:pr-pipeline", to: "k8s:sa:build/ci-deployer", relation: uses_token }
+      policies:
+        - id: P-CI-01
+          name: Pipelines running untrusted code must not reach cluster-wide control
+          severity: critical
+          deny:
+            from: { attributes: { untrusted_input: true } }
+            to: { attributes: { sensitivity: critical } }
+        - id: P-CI-02
+          name: Pipelines must not read production secrets
+          severity: high
+          deny:
+            from: { attributes: { untrusted_input: true } }
+            to: { kind: secret }
+fixed:
+  - name: rbac.yaml
+    content: |
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata: { name: deployer, namespace: prod }
+      rules:
+        - apiGroups: ["apps"]
+          resources: ["deployments"]
+          verbs: ["get", "patch"]
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata: { name: ci-deployer, namespace: prod }
+      roleRef: { apiGroup: rbac.authorization.k8s.io, kind: Role, name: deployer }
+      subjects:
+        - { kind: ServiceAccount, name: ci-deployer, namespace: build }
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata: { name: payments, namespace: prod }
+      rules:
+        - apiGroups: [""]
+          resources: ["configmaps"]
+          verbs: ["get"]
+          resourceNames: ["payments-config"]
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata: { name: payments, namespace: prod }
+      roleRef: { apiGroup: rbac.authorization.k8s.io, kind: Role, name: payments }
+      subjects:
+        - { kind: ServiceAccount, name: payments-admin, namespace: prod }
+  - name: environment.yaml
+    content: |
+      breachframe: 1
+      name: CI pipeline (hardened)
+      nodes:
+        - { id: "agent:pr-pipeline", kind: agent, label: "Pull-request pipeline", attributes: { untrusted_input: true } }
+        - { id: "k8s:sa:build/ci-deployer", kind: service_account, label: "sa build/ci-deployer" }
+      edges:
+        - { from: "agent:pr-pipeline", to: "k8s:sa:build/ci-deployer", relation: uses_token }
+      policies:
+        - id: P-CI-01
+          name: Pipelines running untrusted code must not reach cluster-wide control
+          severity: critical
+          deny:
+            from: { attributes: { untrusted_input: true } }
+            to: { attributes: { sensitivity: critical } }
+        - id: P-CI-02
+          name: Pipelines must not read production secrets
+          severity: high
+          deny:
+            from: { attributes: { untrusted_input: true } }
+            to: { kind: secret }

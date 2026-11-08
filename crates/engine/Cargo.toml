@@ -1,0 +1,16 @@
+[package]
+name = "breachframe-engine"
+description = "BreachFrame security analysis engine: attack-path graphs, policy checks, RBAC/IAM/MCP auditing and reports."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true
+regex.workspace = true
+sha2.workspace = true
+thiserror.workspace = true

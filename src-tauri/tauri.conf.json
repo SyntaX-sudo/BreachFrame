@@ -1,0 +1,61 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "BreachFrame",
+  "version": "0.1.0",
+  "identifier": "dev.breachframe.app",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src ipc: http://ipc.localhost; frame-src 'self' blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "DeveloperTool",
+    "shortDescription": "Visualize the risk. Understand the breach.",
+    "longDescription": "BreachFrame is an open-source desktop platform for offline security auditing of permission graphs, Kubernetes RBAC, AWS IAM and MCP agent configurations, with attack-path visualization, training labs and exportable reports.",
+    "copyright": "Copyright (c) BreachFrame contributors. MIT License.",
+    "license": "MIT",
+    "homepage": "https://github.com/SyntaX-sudo/BreachFrame",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    },
+    "linux": {
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0"
+        ]
+      },
+      "rpm": {
+        "depends": [
+          "webkit2gtk4.1",
+          "gtk3"
+        ]
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15"
+    }
+  }
+}
